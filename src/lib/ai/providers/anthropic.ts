@@ -1,6 +1,6 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { aiConfig } from "../../../config/ai";
-import { anthropic, FALLBACK_BETA } from "../anthropic";
+import { anthropic, fallbackParams } from "../anthropic";
 import { costFor } from "../pricing";
 import type { AskContext, ProviderAnswer, VisibilityProvider } from "./types";
 
@@ -64,8 +64,7 @@ export const anthropicProvider: VisibilityProvider = {
       const res = await anthropic().beta.messages.create({
         model: cfg.model,
         max_tokens: cfg.maxOutputTokens,
-        betas: [FALLBACK_BETA],
-        fallbacks: "default",
+        ...fallbackParams(cfg.model),
         tools,
         messages,
       });

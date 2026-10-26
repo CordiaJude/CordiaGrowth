@@ -44,9 +44,12 @@ export function aiConfig() {
       },
     } satisfies Record<ProviderId, { label: string; model: string; [k: string]: unknown }>,
 
-    /** Claude model that extracts brands/positions from answers. */
+    /**
+     * Claude model that extracts brands/positions from answers. High-volume
+     * extraction, so Haiku; deterministic checks in analyzeAnswer guard accuracy.
+     */
     parser: {
-      model: env("VISIBILITY_PARSER_MODEL", "claude-opus-5-5"),
+      model: env("VISIBILITY_PARSER_MODEL", "claude-haiku-5-5"),
       effort: env("VISIBILITY_PARSER_EFFORT", "low") as Effort,
     },
 
@@ -64,7 +67,7 @@ export function aiConfig() {
      * budget before it starts. Actual cost is metered per call in llm_usage.
      */
     estimates: {
-      perAnswerUsd: { anthropic: 0.12, openai: 0.07, gemini: 0.03, perplexity: 0.03 } satisfies Record<
+      perAnswerUsd: { anthropic: 0.1, openai: 0.06, gemini: 0.02, perplexity: 0.02 } satisfies Record<
         ProviderId,
         number
       >,

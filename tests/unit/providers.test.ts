@@ -242,3 +242,11 @@ describe("provider requests", () => {
     expect(openaiProvider().isConfigured()).toBe(false);
   });
 });
+
+describe("fallbackParams", () => {
+  it("opts Opus/Sonnet into server-side fallbacks but not Haiku (which has none)", async () => {
+    const { fallbackParams, FALLBACK_BETA } = await import("@/lib/ai/anthropic");
+    expect(fallbackParams("claude-opus-5-5")).toEqual({ betas: [FALLBACK_BETA], fallbacks: "default" });
+    expect(fallbackParams("claude-haiku-5-5")).toEqual({});
+  });
+});

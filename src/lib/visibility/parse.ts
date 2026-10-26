@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { aiConfig } from "../../config/ai";
-import { anthropic, FALLBACK_BETA } from "../ai/anthropic";
+import { anthropic, fallbackParams } from "../ai/anthropic";
 import { costFor, type Usage } from "../ai/pricing";
 import { brandNames, mentionsAny } from "./brand-match";
 
@@ -84,8 +84,7 @@ export async function parseAnswerWithClaude(input: {
   const response = await anthropic().beta.messages.parse({
     model,
     max_tokens: 4000,
-    betas: [FALLBACK_BETA],
-    fallbacks: "default",
+    ...fallbackParams(model),
     output_config: { effort: aiConfig().parser.effort, format: betaZodOutputFormat(ParsedAnswerSchema) },
     system: SYSTEM,
     messages: [

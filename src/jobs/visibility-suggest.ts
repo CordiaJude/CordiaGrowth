@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { aiConfig } from "../config/ai";
-import { anthropic, FALLBACK_BETA } from "../lib/ai/anthropic";
+import { anthropic, fallbackParams } from "../lib/ai/anthropic";
 import { costFor } from "../lib/ai/pricing";
 import { summarizeHtml, type PageSummary } from "../lib/html/extract";
 import { safeFetch } from "../lib/net/safe-fetch";
@@ -103,12 +103,12 @@ export const visibilitySuggestPrompts: JobHandler = async ({ jobRunId, siteId, p
   }
 
   const cfg = aiConfig().suggester;
+  const model = cfg.model;
   await log(`Asking ${cfg.model} for ${count} prompts`);
   const response = await anthropic().beta.messages.parse({
-    model: cfg.model,
+    model,
     max_tokens: 8000,
-    betas: [FALLBACK_BETA],
-    fallbacks: "default",
+    ...fallbackParams(model),
     output_config: { effort: cfg.effort, format: betaZodOutputFormat(SuggestionsSchema) },
     system: SYSTEM,
     messages: [{ role: "user", content: describeBusiness(site, page, count) }],

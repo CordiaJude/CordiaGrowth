@@ -91,10 +91,10 @@ run per day). It starts a run for each site whose frequency (daily, weekly or mo
 `CRON_SECRET` in Vercel. To trigger it locally:
 `curl -H "Authorization: Bearer $CRON_SECRET" localhost:3000/api/cron/visibility`.
 
-**Costs:** with the default models, expect roughly $0.03–$0.12 per answer, parsing included. For
-example, 20 prompts × 4 assistants × 3 samples is about $15 per run. Choose the frequency and the
-monthly budget (default $25) with that in mind. The parser model is the biggest lever you control:
-set `VISIBILITY_PARSER_MODEL=claude-haiku-5-5` to cut parsing cost sharply.
+**Costs:** with the default models, expect roughly $0.02–$0.10 per answer, parsing included. For
+example, 20 prompts × 4 assistants × 3 samples is about $8–10 per run, so a weekly schedule fits the
+default $50 monthly budget. Answers come from each assistant's flagship-class model; parsing uses
+Claude Haiku 5.5 (`VISIBILITY_PARSER_MODEL` to change it).
 
 ## Background jobs
 
