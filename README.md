@@ -3,9 +3,8 @@
 Multi-tenant SEO and GEO (generative engine optimization) automation: track how often AI assistants
 mention and cite a business, fix what holds a site back, and publish content worth citing.
 
-**Status:** Phase 0 (foundation). Sign up, create an organization, add sites, switch between them, and
-run a background test job. Later phases add AI visibility tracking, audits, keyword planning, the content
-engine, off-site authority and reporting.
+**Status:** Phase 1 (AI visibility tracker) on top of the Phase 0 foundation. Later phases add audits,
+keyword planning, the content engine, off-site authority and reporting.
 
 ## Stack
 
@@ -28,18 +27,74 @@ pnpm dev                      # http://localhost:3000
 
 Fill `.env.local`:
 
-| Variable                               | Where it comes from                                                                                  |
-| -------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`             | `pnpm exec supabase status` → API URL (local) or Supabase dashboard → Project Settings → API        |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `supabase status` → Publishable key (`sb_publishable_…`)                                             |
-| `SUPABASE_SECRET_KEY`                  | `supabase status` → Secret key (`sb_secret_…`). Server-only; bypasses RLS.                           |
-| `ENCRYPTION_KEYS`                      | `1:` + `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`                |
-| `JOB_RUNNER`                           | `auto` (default): Trigger.dev if `TRIGGER_SECRET_KEY` is set, otherwise inline                       |
-| `TRIGGER_SECRET_KEY`                   | Trigger.dev dashboard → API keys (optional locally)                                                  |
-| `TRIGGER_PROJECT_REF`                  | Trigger.dev project ref, e.g. `proj_abc123` (only for `pnpm dev:trigger` / deploy)                   |
+| Variable                               | Where it comes from                                                                          |
+| -------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`             | `pnpm exec supabase status` → API URL (local) or Supabase dashboard → Project Settings → API |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `supabase status` → Publishable key (`sb_publishable_…`)                                     |
+| `SUPABASE_SECRET_KEY`                  | `supabase status` → Secret key (`sb_secret_…`). Server-only; bypasses RLS.                   |
+| `ENCRYPTION_KEYS`                      | `1:` + `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`         |
+| `JOB_RUNNER`                           | `auto` (default): Trigger.dev if `TRIGGER_SECRET_KEY` is set, otherwise inline               |
+| `TRIGGER_SECRET_KEY`                   | Trigger.dev dashboard → API keys (optional locally)                                          |
+| `TRIGGER_PROJECT_REF`                  | Trigger.dev project ref, e.g. `proj_abc123` (only for `pnpm dev:trigger` / deploy)           |
+| `ANTHROPIC_API_KEY` etc.               | Provider API keys for AI visibility; providers without a key are skipped (see below)         |
+| `CRON_SECRET`                          | Random string; Vercel Cron sends it as a bearer token to `/api/cron/visibility`              |
 
 Then open http://localhost:3000, create an account, create an organization, add a site and press
 **Run test job** on the site page.
+
+## AI visibility (Phase 1)
+
+Per site: track prompts (questions customers ask AI assistants), ask each one several times on each
+enabled assistant, and measure how often the brand is mentioned, where it ranks, which competitors
+appear, and which sources get cited.
+
+| Assistant  | API                                          | Web search                                   | Notes                                                                                                                       |
+| ---------- | -------------------------------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Claude     | Anthropic Messages API (`@anthropic-ai/sdk`) | `web_search_20260318` server tool            | Refusal fallbacks enabled (`fallbacks: "default"`).                                                                         |
+| ChatGPT    | OpenAI Responses API (`fetch`)               | `web_search` tool, `tool_choice: "required"` | `store: false`.                                                                                                             |
+| Gemini     | Gemini API `generateContent` (`fetch`)       | **Off**                                      | The Gemini API terms prohibit storing, analyzing or link-tracking Grounded Results, so Gemini answers from model knowledge. |
+| Perplexity | Agent API `/v1/agent` (`fetch`)              | `web_search` tool                            | Sonar chat completions was deprecated on 2026-09-27. Cost comes from Perplexity's own `usage.cost`.                         |
+
+Model IDs, tool versions, prices and per-answer cost estimates live in `src/config/ai.ts`, and model
+IDs can be overridden with env vars. Check the prices there when providers change them.
+
+**How a run works** (`src/jobs/visibility-run.ts`):
+
+1. It loads active prompts, the brand profile (name, aliases, domains) and competitors.
+2. It estimates the cost. If the estimate doesn't fit the site's remaining monthly budget, the run is
+   marked `budget_blocked` and nothing is called.
+3. It asks prompts × providers × samples (default 3), with up to 4 calls in parallel. Each call is
+   logged in `llm_usage` with tokens, searches and cost.
+4. Each answer is parsed with Claude using structured output: which businesses it names, in what
+   order, and which are us or a competitor. Deterministic checks then:
+   - drop names that don't appear in the answer text;
+   - only accept competitor labels from the site's own list;
+   - count a literal brand mention even when parsing fails.
+5. Results go to `visibility_results`. The run stops early, with status `partial`, if actual spend
+   reaches the budget.
+
+**Prompt suggestions:** "Suggest 20 starter prompts" reads the homepage through the SSRF-safe fetch,
+along with the business details, and asks Claude for prompts. They are stored as `suggested` and
+tracked only after someone accepts them. (The Phase 2 crawl will feed this later.)
+
+**Dashboard:**
+
+- Mention rate per assistant with sample size (n), a 95% Wilson confidence range and the date range.
+- Share of voice against tracked competitors.
+- A weekly trend chart; the tooltip shows n.
+- Prompts where an assistant never mentions you.
+- The most-cited domains.
+- Recent runs, each with the full answers and their citations.
+
+**Schedule:** `vercel.json` runs `/api/cron/visibility` daily at 06:17 UTC (Hobby plans allow one cron
+run per day). It starts a run for each site whose frequency (daily, weekly or monthly) is due. Set
+`CRON_SECRET` in Vercel. To trigger it locally:
+`curl -H "Authorization: Bearer $CRON_SECRET" localhost:3000/api/cron/visibility`.
+
+**Costs:** with the default models, expect roughly $0.03–$0.12 per answer, parsing included. For
+example, 20 prompts × 4 assistants × 3 samples is about $15 per run. Choose the frequency and the
+monthly budget (default $25) with that in mind. The parser model is the biggest lever you control:
+set `VISIBILITY_PARSER_MODEL=claude-haiku-5-5` to cut parsing cost sharply.
 
 ## Background jobs
 
@@ -65,9 +120,12 @@ limit.
 
 ## Database
 
-Migrations live in `supabase/migrations/`. The tables are `profiles`, `organizations`, `memberships`
-(owner/editor/viewer), `sites`, `site_settings`, `integrations` and `job_runs`. Later phases add their
-own tables when they need them.
+Migrations live in `supabase/migrations/`. Phase 0 adds `profiles`, `organizations`, `memberships`
+(owner/editor/viewer), `sites`, `site_settings`, `integrations` and `job_runs`. Phase 1 adds
+`brand_profiles`, `competitors`, `visibility_prompts`, `visibility_runs`, `visibility_results`,
+`llm_usage`, and the aggregate functions `visibility_trend`, `visibility_cited_domains`,
+`visibility_prompt_stats` and `site_ai_spend_this_month`. The aggregate functions run as the caller,
+so RLS applies.
 
 How tenancy is enforced:
 
@@ -79,6 +137,8 @@ How tenancy is enforced:
 - Each new site gets `site_settings` with **auto-publish off**.
 - `integrations.encrypted_credentials` can never be selected by end users.
 - Background workers write `job_runs` with the secret key. Users can only enqueue jobs (editor or owner).
+- Visibility results and usage rows are written only by workers. Users can't forge results, mark
+  runs complete, start "scheduled" runs, or insert prompts that claim to be AI suggestions.
 
 Useful commands:
 
@@ -113,9 +173,9 @@ pnpm exec supabase db lint --level warning
 ## Tests
 
 ```bash
-pnpm test        # unit: encryption, domain normalization, IP/SSRF guard, helpers
-pnpm test:db     # RLS and job runtime against local Supabase (needs pnpm db:start)
-pnpm test:e2e    # Playwright: sign up → org → site → test job (needs build + db + internet)
+pnpm test        # unit: encryption, domains, SSRF guard, stats, citations, answer analysis, providers (mocked fetch)
+pnpm test:db     # RLS, job runtime, visibility run job (fake providers) against local Supabase
+pnpm test:e2e    # Playwright: Phase 0 flow + visibility prompts/competitors/settings (needs build + db + internet)
 ```
 
 For e2e, run `pnpm build` first. If Playwright's browser isn't installed, run

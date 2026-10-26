@@ -17,21 +17,22 @@ export function resolveRunner(): Runner {
   return env.TRIGGER_SECRET_KEY ? "trigger" : "inline";
 }
 
-/**
- * Records a job_runs row as the signed-in user (RLS enforces editor role and
- * tenancy), then hands it to Trigger.dev, or runs it in-process after the
- * response when no Trigger.dev key is configured (local development).
- */
-export async function enqueueJob(input: {
+type JobInput = {
   orgId: string;
   siteId: string | null;
   taskId: JobTaskId;
   payload?: Json;
-  userId: string;
-}): Promise<{ jobRunId: string; runner: Runner }> {
+};
+
+/**
+ * Records a job_runs row as the signed-in user (RLS enforces editor role and
+ * tenancy), then starts it.
+ */
+export async function enqueueJob(
+  input: JobInput & { userId: string },
+): Promise<{ jobRunId: string; runner: Runner }> {
   const runner = resolveRunner();
   const supabase = await createClient();
-
   const { data: run, error } = await supabase
     .from("job_runs")
     .insert({
@@ -45,17 +46,42 @@ export async function enqueueJob(input: {
     .select("id")
     .single();
   if (error || !run) throw new Error(error?.message ?? "Could not create job run");
+  await start(run.id, input.taskId, runner);
+  return { jobRunId: run.id, runner };
+}
 
+/** Same as enqueueJob for system-initiated jobs (cron); caller must have authorized. */
+export async function enqueueSystemJob(input: JobInput): Promise<{ jobRunId: string; runner: Runner }> {
+  const runner = resolveRunner();
+  const { data: run, error } = await createAdminClient()
+    .from("job_runs")
+    .insert({
+      org_id: input.orgId,
+      site_id: input.siteId,
+      task_id: input.taskId,
+      payload: input.payload ?? {},
+      runner,
+    })
+    .select("id")
+    .single();
+  if (error || !run) throw new Error(error?.message ?? "Could not create job run");
+  await start(run.id, input.taskId, runner);
+  return { jobRunId: run.id, runner };
+}
+
+/**
+ * Hands a queued job to Trigger.dev, or runs it in-process after the response
+ * when no Trigger.dev key is configured (local development).
+ */
+async function start(jobRunId: string, taskId: JobTaskId, runner: Runner) {
   if (runner === "inline") {
-    const handler = jobHandlers[input.taskId];
-    after(() => executeJobRun(run.id, handler));
-    return { jobRunId: run.id, runner };
+    after(() => executeJobRun(jobRunId, jobHandlers[taskId]));
+    return;
   }
-
   const admin = createAdminClient();
   try {
-    const handle = await tasks.trigger(input.taskId, { jobRunId: run.id });
-    await admin.from("job_runs").update({ external_run_id: handle.id }).eq("id", run.id);
+    const handle = await tasks.trigger(taskId, { jobRunId });
+    await admin.from("job_runs").update({ external_run_id: handle.id }).eq("id", jobRunId);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     await admin
@@ -65,8 +91,7 @@ export async function enqueueJob(input: {
         error: `Could not reach Trigger.dev: ${message}`,
         finished_at: new Date().toISOString(),
       })
-      .eq("id", run.id);
+      .eq("id", jobRunId);
     throw new Error("Could not start the job. Check the Trigger.dev configuration.");
   }
-  return { jobRunId: run.id, runner };
 }

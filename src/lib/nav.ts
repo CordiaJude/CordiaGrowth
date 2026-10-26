@@ -25,7 +25,6 @@ export const SITE_SECTIONS: SiteSection[] = [
     slug: "visibility",
     title: "AI visibility",
     icon: BotIcon,
-    phase: 1,
     summary:
       "Track how often ChatGPT, Claude, Gemini and Perplexity mention and cite this business, with sample sizes and date ranges.",
   },

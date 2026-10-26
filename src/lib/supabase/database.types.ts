@@ -23,6 +23,98 @@ export type Database = {
   };
   public: {
     Tables: {
+      brand_profiles: {
+        Row: {
+          aliases: string[];
+          brand_name: string;
+          org_id: string;
+          own_domains: string[];
+          site_id: string;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          aliases?: string[];
+          brand_name: string;
+          org_id: string;
+          own_domains?: string[];
+          site_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          aliases?: string[];
+          brand_name?: string;
+          org_id?: string;
+          own_domains?: string[];
+          site_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "brand_profiles_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "brand_profiles_site_id_fkey";
+            columns: ["site_id"];
+            isOneToOne: true;
+            referencedRelation: "sites";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      competitors: {
+        Row: {
+          aliases: string[];
+          created_at: string;
+          created_by: string | null;
+          domain: string | null;
+          id: string;
+          name: string;
+          org_id: string;
+          site_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          aliases?: string[];
+          created_at?: string;
+          created_by?: string | null;
+          domain?: string | null;
+          id?: string;
+          name: string;
+          org_id: string;
+          site_id: string;
+        };
+        Update: {
+          aliases?: string[];
+          created_at?: string;
+          created_by?: string | null;
+          domain?: string | null;
+          id?: string;
+          name?: string;
+          org_id?: string;
+          site_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "competitors_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "competitors_site_id_fkey";
+            columns: ["site_id"];
+            isOneToOne: false;
+            referencedRelation: "sites";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       integrations: {
         Row: {
           created_at: string;
@@ -157,6 +249,84 @@ export type Database = {
           },
         ];
       };
+      llm_usage: {
+        Row: {
+          cost_usd: number;
+          created_at: string;
+          id: string;
+          input_tokens: number;
+          job_run_id: string | null;
+          model: string;
+          org_id: string;
+          output_tokens: number;
+          provider: string;
+          purpose: string;
+          search_requests: number;
+          site_id: string | null;
+          visibility_run_id: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          cost_usd?: number;
+          created_at?: string;
+          id?: string;
+          input_tokens?: number;
+          job_run_id?: string | null;
+          model: string;
+          org_id: string;
+          output_tokens?: number;
+          provider: string;
+          purpose: string;
+          search_requests?: number;
+          site_id?: string | null;
+          visibility_run_id?: string | null;
+        };
+        Update: {
+          cost_usd?: number;
+          created_at?: string;
+          id?: string;
+          input_tokens?: number;
+          job_run_id?: string | null;
+          model?: string;
+          org_id?: string;
+          output_tokens?: number;
+          provider?: string;
+          purpose?: string;
+          search_requests?: number;
+          site_id?: string | null;
+          visibility_run_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "llm_usage_job_run_id_fkey";
+            columns: ["job_run_id"];
+            isOneToOne: false;
+            referencedRelation: "job_runs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "llm_usage_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "llm_usage_site_id_fkey";
+            columns: ["site_id"];
+            isOneToOne: false;
+            referencedRelation: "sites";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "llm_usage_visibility_run_id_fkey";
+            columns: ["visibility_run_id"];
+            isOneToOne: false;
+            referencedRelation: "visibility_runs";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       memberships: {
         Row: {
           created_at: string;
@@ -248,6 +418,7 @@ export type Database = {
           org_id: string;
           site_id: string;
           updated_at: string;
+          visibility_providers: string[];
           visibility_run_frequency: Database["public"]["Enums"]["run_frequency"];
           visibility_runs_per_prompt: number;
         };
@@ -259,6 +430,7 @@ export type Database = {
           org_id: string;
           site_id: string;
           updated_at?: string;
+          visibility_providers?: string[];
           visibility_run_frequency?: Database["public"]["Enums"]["run_frequency"];
           visibility_runs_per_prompt?: number;
         };
@@ -269,6 +441,7 @@ export type Database = {
           org_id?: string;
           site_id?: string;
           updated_at?: string;
+          visibility_providers?: string[];
           visibility_run_frequency?: Database["public"]["Enums"]["run_frequency"];
           visibility_runs_per_prompt?: number;
         };
@@ -343,6 +516,258 @@ export type Database = {
           },
         ];
       };
+      visibility_prompts: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          org_id: string;
+          rationale: string | null;
+          site_id: string;
+          source: Database["public"]["Enums"]["prompt_source"];
+          status: Database["public"]["Enums"]["prompt_status"];
+          text: string;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          org_id: string;
+          rationale?: string | null;
+          site_id: string;
+          source?: Database["public"]["Enums"]["prompt_source"];
+          status?: Database["public"]["Enums"]["prompt_status"];
+          text: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          org_id?: string;
+          rationale?: string | null;
+          site_id?: string;
+          source?: Database["public"]["Enums"]["prompt_source"];
+          status?: Database["public"]["Enums"]["prompt_status"];
+          text?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "visibility_prompts_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "visibility_prompts_site_id_fkey";
+            columns: ["site_id"];
+            isOneToOne: false;
+            referencedRelation: "sites";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      visibility_results: {
+        Row: {
+          answer_text: string | null;
+          brand_mentioned: boolean | null;
+          brand_position: number | null;
+          cited_domains: string[];
+          cited_urls: string[];
+          competitors_mentioned: string[];
+          cost_usd: number;
+          created_at: string;
+          entities: NonNullable<Json>;
+          error: string | null;
+          id: string;
+          latency_ms: number | null;
+          listed_count: number | null;
+          model: string;
+          org_id: string;
+          our_domain_cited: boolean;
+          parse_status: Database["public"]["Enums"]["parse_status"];
+          prompt_id: string;
+          provider: string;
+          run_id: string;
+          sample_index: number;
+          site_id: string;
+          status: Database["public"]["Enums"]["result_status"];
+        };
+        ComputedFields: never;
+        Insert: {
+          answer_text?: string | null;
+          brand_mentioned?: boolean | null;
+          brand_position?: number | null;
+          cited_domains?: string[];
+          cited_urls?: string[];
+          competitors_mentioned?: string[];
+          cost_usd?: number;
+          created_at?: string;
+          entities?: NonNullable<Json>;
+          error?: string | null;
+          id?: string;
+          latency_ms?: number | null;
+          listed_count?: number | null;
+          model: string;
+          org_id: string;
+          our_domain_cited?: boolean;
+          parse_status?: Database["public"]["Enums"]["parse_status"];
+          prompt_id: string;
+          provider: string;
+          run_id: string;
+          sample_index: number;
+          site_id: string;
+          status: Database["public"]["Enums"]["result_status"];
+        };
+        Update: {
+          answer_text?: string | null;
+          brand_mentioned?: boolean | null;
+          brand_position?: number | null;
+          cited_domains?: string[];
+          cited_urls?: string[];
+          competitors_mentioned?: string[];
+          cost_usd?: number;
+          created_at?: string;
+          entities?: NonNullable<Json>;
+          error?: string | null;
+          id?: string;
+          latency_ms?: number | null;
+          listed_count?: number | null;
+          model?: string;
+          org_id?: string;
+          our_domain_cited?: boolean;
+          parse_status?: Database["public"]["Enums"]["parse_status"];
+          prompt_id?: string;
+          provider?: string;
+          run_id?: string;
+          sample_index?: number;
+          site_id?: string;
+          status?: Database["public"]["Enums"]["result_status"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "visibility_results_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "visibility_results_prompt_id_fkey";
+            columns: ["prompt_id"];
+            isOneToOne: false;
+            referencedRelation: "visibility_prompts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "visibility_results_run_id_fkey";
+            columns: ["run_id"];
+            isOneToOne: false;
+            referencedRelation: "visibility_runs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "visibility_results_site_id_fkey";
+            columns: ["site_id"];
+            isOneToOne: false;
+            referencedRelation: "sites";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      visibility_runs: {
+        Row: {
+          completed_calls: number;
+          cost_usd: number;
+          created_at: string;
+          created_by: string | null;
+          error: string | null;
+          estimated_cost_usd: number;
+          failed_calls: number;
+          finished_at: string | null;
+          id: string;
+          job_run_id: string | null;
+          org_id: string;
+          planned_calls: number;
+          prompt_count: number;
+          providers: string[];
+          samples_per_prompt: number;
+          site_id: string;
+          started_at: string | null;
+          status: Database["public"]["Enums"]["visibility_run_status"];
+          trigger: Database["public"]["Enums"]["run_trigger"];
+        };
+        ComputedFields: never;
+        Insert: {
+          completed_calls?: number;
+          cost_usd?: number;
+          created_at?: string;
+          created_by?: string | null;
+          error?: string | null;
+          estimated_cost_usd?: number;
+          failed_calls?: number;
+          finished_at?: string | null;
+          id?: string;
+          job_run_id?: string | null;
+          org_id: string;
+          planned_calls?: number;
+          prompt_count?: number;
+          providers?: string[];
+          samples_per_prompt?: number;
+          site_id: string;
+          started_at?: string | null;
+          status?: Database["public"]["Enums"]["visibility_run_status"];
+          trigger?: Database["public"]["Enums"]["run_trigger"];
+        };
+        Update: {
+          completed_calls?: number;
+          cost_usd?: number;
+          created_at?: string;
+          created_by?: string | null;
+          error?: string | null;
+          estimated_cost_usd?: number;
+          failed_calls?: number;
+          finished_at?: string | null;
+          id?: string;
+          job_run_id?: string | null;
+          org_id?: string;
+          planned_calls?: number;
+          prompt_count?: number;
+          providers?: string[];
+          samples_per_prompt?: number;
+          site_id?: string;
+          started_at?: string | null;
+          status?: Database["public"]["Enums"]["visibility_run_status"];
+          trigger?: Database["public"]["Enums"]["run_trigger"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "visibility_runs_job_run_id_fkey";
+            columns: ["job_run_id"];
+            isOneToOne: false;
+            referencedRelation: "job_runs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "visibility_runs_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "visibility_runs_site_id_fkey";
+            columns: ["site_id"];
+            isOneToOne: false;
+            referencedRelation: "sites";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -365,6 +790,39 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      site_ai_spend_this_month: { Args: { p_site_id: string }; Returns: number };
+      visibility_cited_domains: {
+        Args: { p_from: string; p_limit?: number; p_site_id: string; p_to: string };
+        Returns: {
+          answers: number;
+          citations: number;
+          domain: string;
+          providers: string[];
+        }[];
+      };
+      visibility_prompt_stats: {
+        Args: { p_from: string; p_site_id: string; p_to: string };
+        Returns: {
+          best_position: number;
+          brand_mentions: number;
+          prompt_id: string;
+          provider: string;
+          samples: number;
+          top_competitors: string[];
+        }[];
+      };
+      visibility_trend: {
+        Args: { p_bucket?: string; p_from: string; p_site_id: string; p_to: string };
+        Returns: {
+          brand_mentions: number;
+          bucket: string;
+          competitor_mentions: number;
+          first_at: string;
+          last_at: string;
+          provider: string;
+          samples: number;
+        }[];
+      };
     };
     Enums: {
       cms_type: "wordpress" | "webflow" | "shopify" | "squarespace" | "wix" | "custom" | "other";
@@ -372,7 +830,13 @@ export type Database = {
       integration_status: "pending" | "connected" | "error" | "revoked";
       job_status: "queued" | "running" | "succeeded" | "failed" | "canceled";
       org_role: "owner" | "editor" | "viewer";
+      parse_status: "parsed" | "failed" | "skipped";
+      prompt_source: "manual" | "suggested";
+      prompt_status: "active" | "paused" | "suggested";
+      result_status: "ok" | "error" | "refused";
       run_frequency: "daily" | "weekly" | "monthly" | "manual";
+      run_trigger: "manual" | "scheduled";
+      visibility_run_status: "queued" | "running" | "completed" | "partial" | "failed" | "budget_blocked";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -491,7 +955,13 @@ export const Constants = {
       integration_status: ["pending", "connected", "error", "revoked"],
       job_status: ["queued", "running", "succeeded", "failed", "canceled"],
       org_role: ["owner", "editor", "viewer"],
+      parse_status: ["parsed", "failed", "skipped"],
+      prompt_source: ["manual", "suggested"],
+      prompt_status: ["active", "paused", "suggested"],
+      result_status: ["ok", "error", "refused"],
       run_frequency: ["daily", "weekly", "monthly", "manual"],
+      run_trigger: ["manual", "scheduled"],
+      visibility_run_status: ["queued", "running", "completed", "partial", "failed", "budget_blocked"],
     },
   },
 } as const;

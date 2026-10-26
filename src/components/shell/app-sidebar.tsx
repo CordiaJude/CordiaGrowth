@@ -132,7 +132,10 @@ export function AppSidebar({
                 const href = `${base}/s/${site.id}${section.slug ? `/${section.slug}` : ""}`;
                 return (
                   <SidebarMenuItem key={section.slug || "overview"}>
-                    <SidebarMenuButton asChild isActive={pathname === href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={section.slug ? pathname.startsWith(href) : pathname === href}
+                    >
                       <Link href={href}>
                         <section.icon />
                         <span>{section.title}</span>
