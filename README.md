@@ -156,6 +156,23 @@ pnpm exec supabase db lint --level warning
    where `enable_confirmations = false`.
 3. Set the minimum password length to 8, to match the app.
 
+## Deploying to Vercel
+
+1. Create the hosted Supabase project and push the migrations (see above).
+2. In Vercel → Project → Settings → Environment Variables, add these for Production (and Preview):
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+   - `SUPABASE_SECRET_KEY`
+   - `ENCRYPTION_KEYS`
+   - `CRON_SECRET`
+   - the provider API keys
+3. **Redeploy.** `NEXT_PUBLIC_*` values are built into the app at build time, so adding them doesn't
+   affect a deployment that already exists.
+4. In Supabase → Authentication → URL Configuration, set the Site URL to the Vercel domain.
+
+If required variables are missing, every page returns a 503 "Setup required" page that lists the
+missing variable names (never their values), instead of a bare 500.
+
 ## Security notes
 
 - **Secrets at rest:** OAuth tokens and CMS credentials are encrypted with AES-256-GCM using versioned
